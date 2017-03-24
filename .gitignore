@@ -45,6 +45,8 @@ wxvlc
 vlc_install_dir/*
 plugins.dat
 patches/*
+vlckitbuild
+contrib
 
 include/vlc/libvlc_version.h
 
@@ -52,4 +54,3 @@ include/vlc/libvlc_version.h
 build*
 contrib-*
 install-*
-
