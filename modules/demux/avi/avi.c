@@ -2866,8 +2866,10 @@ static void AVI_ExtractSubtitle( demux_t *p_demux,
     char *psz_description = NULL;
     avi_chunk_indx_t *p_indx = NULL;
 
-    if( !p_sys->b_seekable )
+    if( !p_sys->b_seekable ) {
+        msg_Dbg( p_demux, "%s, %d", __FUNCTION__, __LINE__ );
         goto exit;
+    }
 
     p_indx = AVI_ChunkFind( p_strl, AVIFOURCC_indx, 0 );
     avi_chunk_t ck;
@@ -2879,15 +2881,19 @@ static void AVI_ExtractSubtitle( demux_t *p_demux,
             p_indx->i_entriesinuse > 0 )
         {
             if( vlc_stream_Seek( p_demux->s, p_indx->idx.super[0].i_offset ) ||
-                AVI_ChunkRead( p_demux->s, &ck, NULL  ) )
-                goto exit;
+                AVI_ChunkRead( p_demux->s, &ck, NULL  ) ) {
+                    msg_Dbg( p_demux, "%s, %d", __FUNCTION__, __LINE__ );
+                    goto exit;
+                }
             p_indx = &ck.indx;
         }
 
         if( p_indx->i_indextype != AVI_INDEX_OF_CHUNKS ||
             p_indx->i_entriesinuse != 1 ||
-            p_indx->i_indexsubtype != 0 )
-            goto exit;
+            p_indx->i_indexsubtype != 0 ) {
+                msg_Dbg( p_demux, "%s, %d", __FUNCTION__, __LINE__ );
+                goto exit;
+            }
 
         i_position  = p_indx->i_baseoffset +
                       p_indx->idx.std[0].i_offset - 8;
@@ -2898,8 +2904,10 @@ static void AVI_ExtractSubtitle( demux_t *p_demux,
         avi_chunk_idx1_t *p_idx1;
         uint64_t         i_offset;
 
-        if( AVI_IndexFind_idx1( p_demux, &p_idx1, &i_offset ) )
+        if( AVI_IndexFind_idx1( p_demux, &p_idx1, &i_offset ) ) {
+            msg_Dbg( p_demux, "%s, %d", __FUNCTION__, __LINE__ );
             goto exit;
+        }
 
         i_size = 0;
         for( unsigned i = 0; i < p_idx1->i_entry_count; i++ )
@@ -2915,9 +2923,13 @@ static void AVI_ExtractSubtitle( demux_t *p_demux,
                 i_size     = e->i_length + 8;
                 break;
             }
+            msg_Dbg( p_demux, "%s, %d, i: %d, i_cat: %d, i_stream_idx: %d, i_flags: %d, i_fourcc: %d",
+              __FUNCTION__, __LINE__, i, i_cat, i_stream_idx, e->i_flags, e->i_fourcc );
         }
-        if( i_size <= 0 )
+        if( i_size <= 0 ) {
+            msg_Dbg( p_demux, "%s, %d", __FUNCTION__, __LINE__ );
             goto exit;
+        }
     }
 
     /* */
@@ -2927,35 +2939,49 @@ static void AVI_ExtractSubtitle( demux_t *p_demux,
         goto exit;
     }
 
-    if( vlc_stream_Seek( p_demux->s, i_position ) )
+    if( vlc_stream_Seek( p_demux->s, i_position ) ) {
+        msg_Dbg( p_demux, "%s, %d", __FUNCTION__, __LINE__ );
         goto exit;
+    }
     p_block = vlc_stream_Block( p_demux->s, i_size );
-    if( !p_block )
+    if( !p_block ) {
+        msg_Dbg( p_demux, "%s, %d", __FUNCTION__, __LINE__ );
         goto exit;
+    }
 
     /* Parse packet header */
     const uint8_t *p = p_block->p_buffer;
-    if( i_size < 8 || p[2] != 't' || p[3] != 'x' )
+    if( i_size < 8 || p[2] != 't' || p[3] != 'x' ) {
+        msg_Dbg( p_demux, "%s, %d", __FUNCTION__, __LINE__ );
         goto exit;
+    }
     p += 8;
     i_size -= 8;
 
     /* Parse subtitle chunk header */
     if( i_size < 11 || memcmp( p, "GAB2", 4 ) ||
-        p[4] != 0x00 || GetWLE( &p[5] ) != 0x2 )
-        goto exit;
+        p[4] != 0x00 || GetWLE( &p[5] ) != 0x2 ) {
+            msg_Dbg( p_demux, "%s, %d", __FUNCTION__, __LINE__ );
+            goto exit;
+        }
     const unsigned i_name = GetDWLE( &p[7] );
-    if( 11 + i_size <= i_name )
+    if( 11 + i_size <= i_name ) {
+        msg_Dbg( p_demux, "%s, %d", __FUNCTION__, __LINE__ );
         goto exit;
+    }
     if( i_name > 0 )
         psz_description = FromCharset( "UTF-16LE", &p[11], i_name );
     p += 11 + i_name;
     i_size -= 11 + i_name;
-    if( i_size < 6 || GetWLE( &p[0] ) != 0x04 )
+    if( i_size < 6 || GetWLE( &p[0] ) != 0x04 ) {
+        msg_Dbg( p_demux, "%s, %d", __FUNCTION__, __LINE__ );
         goto exit;
+    }
     const unsigned i_payload = GetDWLE( &p[2] );
-    if( i_size < 6 + i_payload || i_payload <= 0 )
+    if( i_size < 6 + i_payload || i_payload <= 0 ) {
+        msg_Dbg( p_demux, "%s, %d", __FUNCTION__, __LINE__ );
         goto exit;
+    }
     p += 6;
     i_size -= 6;
 
